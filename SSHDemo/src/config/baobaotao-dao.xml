@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+	
+		<!-- xmlns:p="http://www.springframework.org/schema/p" -->
+		
+
+    <context:property-placeholder location="classpath:config/jdbc.properties"/>
+
+<!-- class="org.apache.commons.dbcp.BasicDataSource" -->
+
+	<bean id="dataSource"
+		class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close"
+	    p:driverClassName="${jdbc.driverClassName}"
+	    p:url="${jdbc.url}"
+	    p:username="${jdbc.username}"
+	    p:password="${jdbc.password}" />
+	
+	
+	<!-- class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean"> -->
+	<bean id="sessionFactory"
+		 class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+	    <property name="packagesToScan">
+            <list>
+                <value>com.baobaotao.domain</value>
+            </list>
+        </property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+			</props>
+		</property>
+		<!-- <property name="entityCacheStrategies">
+			<props>
+				<prop key="com.baobaotao.domain.Board">nonstrict-read-write,fixedRegion</prop>
+				<prop key="com.baobaotao.domain.User">nonstrict-read-write,freqChangeRegion</prop>
+				<prop key="com.baobaotao.domain.Topic">read-write,freqChangeRegion</prop>
+				<prop key="com.baobaotao.domain.Post">read-write,freqChangeRegion</prop>
+			</props>
+		</property> -->
+	</bean>
+	
+	<!-- 扫描com.baobaotao.dao包下所有标注@Repository的DAO组件 -->
+	<!-- 自动扫描组件，这里要把web下面的 controller去除，如果不去除会影响事务管理的。-->
+	<context:component-scan base-package="com.baobaotao.dao">
+		<context:exclude-filter type="regex" expression="com.baobaotao.dao.web.*"/>
+	</context:component-scan>
+
+	<!-- 下面是配置声明式事务管理的，个人感觉比用注解管理事务要简单方便 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	
+</beans>
